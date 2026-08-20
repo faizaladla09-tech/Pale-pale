@@ -33,7 +33,6 @@ interface PlayerState {
   originalQueue: Track[];
   isShuffle: boolean;
   repeatMode: 'off' | 'all' | 'one';
-  backgroundPlayEnabled: boolean;
   
   playTrack: (track: Track, queue?: Track[], context?: 'playlist' | 'similar') => void;
   playNext: () => Promise<void>;
@@ -49,8 +48,6 @@ interface PlayerState {
   setDominantColor: (color: string | null) => void;
   toggleShuffle: () => void;
   toggleRepeat: () => void;
-  setBackgroundPlayEnabled: (enabled: boolean) => void;
-  clearHistory: () => void;
 }
 
 export const usePlayerStore = create<PlayerState>()(
@@ -73,7 +70,6 @@ export const usePlayerStore = create<PlayerState>()(
       originalQueue: [],
       isShuffle: false,
       repeatMode: 'off',
-      backgroundPlayEnabled: true,
 
       playTrack: (rawTrack, rawQueue, context = 'similar') => {
         const track = {
@@ -336,8 +332,6 @@ export const usePlayerStore = create<PlayerState>()(
         const nextMode = state.repeatMode === 'off' ? 'all' : state.repeatMode === 'all' ? 'one' : 'off';
         return { repeatMode: nextMode };
       }),
-      setBackgroundPlayEnabled: (enabled) => set({ backgroundPlayEnabled: enabled }),
-      clearHistory: () => set({ history: [] }),
     }),
     {
       name: 'player-storage',
@@ -346,8 +340,7 @@ export const usePlayerStore = create<PlayerState>()(
         playCounts: state.playCounts,
         volume: state.volume,
         isShuffle: state.isShuffle,
-        repeatMode: state.repeatMode,
-        backgroundPlayEnabled: state.backgroundPlayEnabled
+        repeatMode: state.repeatMode
       }),
     }
   )
