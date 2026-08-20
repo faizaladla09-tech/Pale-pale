@@ -1,8 +1,6 @@
-'use client';
-
-import React, { useState, useEffect, memo } from 'react';
-import { Play, Radio, Check, PlusSquare } from 'lucide-react';
-import { SmoothImage } from '@/components/SmoothImage';
+import { useState, useEffect } from 'react';
+import { Play, Plus, Radio, Check, PlusSquare } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { usePlayerStore, Track } from '@/lib/store';
 import { db } from '@/lib/db';
@@ -15,7 +13,7 @@ interface PlaylistData {
   videos: Track[];
 }
 
-function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) {
+export function CommunityPlaylistCard({ playlistId }: { playlistId: string }) {
   const [playlist, setPlaylist] = useState<PlaylistData | null>(null);
   const [loading, setLoading] = useState(true);
   const [added, setAdded] = useState(false);
@@ -23,44 +21,23 @@ function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) 
   const playTrack = usePlayerStore((state) => state.playTrack);
 
   useEffect(() => {
-    const controller = new AbortController();
-    
     const fetchPlaylist = async () => {
       try {
-        const res = await fetch(`/api/ytplaylist?id=${encodeURIComponent(playlistId)}`, {
-          signal: controller.signal
-        });
-        if (!res.ok) {
-          setPlaylist(null);
-          return;
+        const res = await fetch(`/api/ytplaylist?id=${playlistId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPlaylist({
+            ...data,
+            videos: data.videos || data.songs || []
+          });
         }
-        
-        const data = await res.json();
-        const videos = data.videos || data.songs || [];
-        if (videos.length === 0) {
-          setPlaylist(null);
-          return;
-        }
-
-        setPlaylist({
-          ...data,
-          videos
-        });
-      } catch (error: any) {
-        if (error.name !== 'AbortError') {
-          console.warn('Failed to fetch community playlist:', error?.message || error);
-          setPlaylist(null);
-        }
+      } catch (error) {
+        console.error('Failed to fetch playlist:', error);
       } finally {
         setLoading(false);
       }
     };
-    
     fetchPlaylist();
-
-    return () => {
-      controller.abort();
-    };
   }, [playlistId]);
 
   if (loading) {
@@ -123,6 +100,7 @@ function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) 
 
   const handleRadio = (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Start radio based on the first track
     if (playlist.videos && playlist.videos.length > 0) {
       playTrack(playlist.videos[0], [], 'similar');
     }
@@ -144,8 +122,8 @@ function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) 
           {playlist.videos && playlist.videos.length >= 4 ? (
             <div className="grid grid-cols-2 grid-rows-2 w-full h-full">
               {playlist.videos.slice(0, 4).map((track, i) => (
-                <div key={i} className="relative w-full h-full bg-white/5">
-                  <SmoothImage 
+                <div key={i} className="relative w-full h-full">
+                  <Image 
                     src={track.thumbnails?.[track.thumbnails.length - 1]?.url || '/placeholder.png'} 
                     alt={track.name} 
                     fill 
@@ -156,7 +134,7 @@ function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) 
               ))}
             </div>
           ) : (
-            <SmoothImage 
+            <Image 
               src={playlist.thumbnails?.[playlist.thumbnails.length - 1]?.url || '/placeholder.png'} 
               alt={playlist.name} 
               fill 
@@ -174,8 +152,8 @@ function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) 
       <div className="flex-1 space-y-4 mb-6">
         {displayTracks.map((track, i) => (
           <div key={i} className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg overflow-hidden relative shrink-0 bg-white/5">
-              <SmoothImage 
+            <div className="w-12 h-12 rounded-lg overflow-hidden relative shrink-0">
+              <Image 
                 src={track.thumbnails?.[track.thumbnails.length - 1]?.url || '/placeholder.png'} 
                 alt={track.name} 
                 fill 
@@ -197,28 +175,23 @@ function CommunityPlaylistCardComponent({ playlistId }: { playlistId: string }) 
       <div className="flex items-center gap-3 mt-auto">
         <button 
           onClick={handlePlay}
-          className="w-13 h-13 liquid-glass-green rounded-full flex items-center justify-center hover:scale-105 transition-all shadow-lg"
-          title="Putar Playlist"
+          className="w-14 h-14 bg-[#81B29A] rounded-full flex items-center justify-center hover:scale-105 transition-transform"
         >
-          <Play className="w-6 h-6 text-zinc-950 fill-current ml-0.5" />
+          <Play className="w-7 h-7 text-black fill-current ml-1" />
         </button>
         <button 
           onClick={handleRadio}
-          className="w-13 h-13 rounded-full liquid-glass-icon flex items-center justify-center hover:scale-105 transition-all text-white"
-          title="Radio Playlist"
+          className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
         >
-          <Radio className="w-5 h-5 text-white" />
+          <Radio className="w-6 h-6 text-white" />
         </button>
         <button 
           onClick={handleAdd}
-          className="w-13 h-13 rounded-full liquid-glass-icon flex items-center justify-center hover:scale-105 transition-all text-white"
-          title={added ? "Tersimpan" : "Simpan Playlist"}
+          className="w-14 h-14 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
         >
-          {added ? <Check className="w-5 h-5 text-[#81B29A]" /> : <PlusSquare className="w-5 h-5 text-white" />}
+          {added ? <Check className="w-6 h-6 text-white" /> : <PlusSquare className="w-6 h-6 text-white" />}
         </button>
       </div>
     </div>
   );
 }
-
-export const CommunityPlaylistCard = memo(CommunityPlaylistCardComponent);
